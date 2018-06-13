@@ -17,6 +17,8 @@ import xml.etree.ElementTree as etree
 
 CHUNK_PARTS_RE = re.compile(
 	'^(\d+)\s+([\d:,]+) --> ([\d:,]+)\s+HOME\((.+)\) ([\d\.]+ [\d:]+)\s+GPS\((.+)\) (.+)$', flags=re.S)
+EXT_PARTS_RE = re.compile('(\w+):\s?(\S+)')
+
 TIME_PATTERN = "%H:%M:%S,000"
 DATETIME_PATTERN = "%Y.%m.%d %H:%M:%S"
 VIDEO_TIME_FORMAT = "%M:%S"
@@ -46,8 +48,15 @@ class DJITrackPoint(object):
 		if self.time:
 			time = etree.SubElement(wpt, 'time')
 			time.text = self.time.astimezone(datetime.timezone.utc).strftime(GPX_UTC_DATETIME_FORMAT)
-		return wpt
+		if self.extra:
+			extra_container = etree.SubElement(wpt, 'extensions')
+			for name, value in self.extra.items():
+				normalized_name = name.lower()
+				extra_item = etree.SubElement(extra_container, "dji:%s" % normalized_name)
+				
+				extra_item.text = value
 
+		return wpt
 
 
 class Track(object):
@@ -125,6 +134,7 @@ class GPXDocument(object):
 
 arg_parser = argparse.ArgumentParser(description='Convert DJI format .srt files to .gpx')
 
+arg_parser.add_argument('-e', action='store_true', help='Output DJI metadata such as exposure and air pressure in GPX extension tag')
 arg_parser.add_argument('input', metavar='SRT', help='Input .srt file path')
 args = arg_parser.parse_args()
 
@@ -152,7 +162,17 @@ for c in chunks:
 
 	aircraft_lon, aircraft_lat, aircraft_ele = map(lambda l: float(l), chunk_parts[5].split(','))
 
-	points.append(DJITrackPoint(aircraft_lon, aircraft_lat, aircraft_ele, point_time))
+	ext_items = {}
+	if args.e:
+		ext_items = dict(EXT_PARTS_RE.findall(chunk_parts[6]))
+		ext_items.update({
+			'video_begin': video_begin_time.strftime(VIDEO_TIME_FORMAT),
+			'video_end': video_end_time.strftime(VIDEO_TIME_FORMAT),
+			'home_lon': home_lon,
+			'home_lat': home_lat
+		})
+
+	points.append(DJITrackPoint(aircraft_lon, aircraft_lat, aircraft_ele, point_time, ext_items))
 
 dest_dir, input_filename = os.path.split(args.input)
 dest_filename = os.path.splitext(input_filename)[0]
