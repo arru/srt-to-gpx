@@ -15,7 +15,7 @@ Some DJI drones provide the option for generating SRT (subtitle) files accompany
 
 Usage
 -----
-Please run `dji_srt.py -h` for usage guidance.
+Please run `python srt_to_gpx.py -h` for usage guidance.
 
 License
 -------
