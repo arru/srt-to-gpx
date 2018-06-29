@@ -23,6 +23,7 @@ TIME_PATTERN = "%H:%M:%S,000"
 DATETIME_PATTERN = "%Y.%m.%d %H:%M:%S"
 VIDEO_TIME_FORMAT = "%M:%S"
 GPX_UTC_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+#time zone of SRT file is assumed to be the same as the system running this script
 LOCAL_TIMEZONE = datetime.datetime.utcnow().astimezone().tzinfo
 TIME_ZERO = datetime.timedelta(0)
 
@@ -135,7 +136,7 @@ class GPXDocument(object):
 arg_parser = argparse.ArgumentParser(description='Convert DJI format .srt files to .gpx')
 
 arg_parser.add_argument('-e', action='store_true', help='Output DJI metadata such as exposure and air pressure in GPX extension tag')
-arg_parser.add_argument('input', metavar='SRT', help='Input .srt file path')
+arg_parser.add_argument('input', metavar='SRT', help='Input .srt file path. Note: time zone of SRT file is assumed, correctly or not, to be the same as the system running this script.')
 args = arg_parser.parse_args()
 
 file_ = open(args.input, 'r')
